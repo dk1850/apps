@@ -3,28 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kabus Garage - Timeline Manager</title>
+    <title>Biker Garage - Timeline Manager v2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Permanent+Marker&family=Rock+Salt&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Permanent+Marker&display=swap');
         
         .rock-font { font-family: 'Oswald', sans-serif; tracking: 0.05em; }
-        .marker-font { font-family: 'Permanent Marker', cursive; }
         
-        /* Custom Scrollbar für die Web-Vorschau */
+        /* Custom Scrollbar */
         .custom-scroll::-webkit-scrollbar { height: 8px; }
         .custom-scroll::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #ea580c; border-radius: 4px; }
-        
-        /* Druck- und Slalom-Stile */
-        .slalom-line {
-            position: absolute;
-            border: 4px dashed #ea580c;
-            z-index: 0;
-        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen selection:bg-orange-600 selection:text-white">
@@ -34,13 +26,13 @@
         <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 p-5 rounded-2xl border-2 border-orange-600/30 shadow-2xl shadow-orange-950/20">
             <div>
                 <h1 class="text-3xl font-black text-orange-500 flex items-center gap-3 rock-font uppercase italic tracking-wider">
-                    <i data-lucide="wrench" class="text-orange-500 animate-pulse"></i> BIKER GARAGE <span class="text-slate-400 font-light text-xl">// Timeline</span>
+                    <i data-lucide="wrench" class="text-orange-500"></i> BIKER GARAGE <span class="text-slate-400 font-light text-xl">// Schrauberbuch v2</span>
                 </h1>
-                <p class="text-xs text-slate-400 uppercase tracking-widest mt-1">Rock 'n' Roll Service & Leasing Planer</p>
+                <p class="text-xs text-slate-400 uppercase tracking-widest mt-1">Rock 'n' Roll Service, Kauf- & Leasing Planer</p>
             </div>
             <div class="flex gap-3 w-full sm:w-auto">
-                <button onclick="openModal('vehicleModal')" class="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition uppercase rock-font tracking-wide shadow-lg shadow-orange-900/40">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Bike/KFZ einreiten
+                <button onclick="openVehicleModal(false)" class="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition uppercase rock-font tracking-wide shadow-lg shadow-orange-900/40">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Ofen einreiten
                 </button>
                 <button onclick="exportSlalomPDF()" class="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-orange-500 border border-orange-500/50 px-5 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition uppercase rock-font tracking-wide">
                     <i data-lucide="download" class="w-4 h-4"></i> PDF Heavy Load
@@ -53,8 +45,13 @@
             <div class="space-y-6">
                 <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl">
                     <label class="block text-xs font-bold text-orange-500 uppercase tracking-widest mb-2 rock-font">Aktuelle Maschine</label>
-                    <select id="vehicleSelect" onchange="switchVehicle(this.value)" class="w-full bg-slate-950 border border-slate-800 text-orange-400 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-orange-500 focus:outline-none">
-                        </select>
+                    <div class="flex gap-2">
+                        <select id="vehicleSelect" onchange="switchVehicle(this.value)" class="flex-1 bg-slate-950 border border-slate-800 text-orange-400 rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                            </select>
+                        <button onclick="openVehicleModal(true)" id="editVehicleBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 p-3 rounded-xl border border-slate-700 transition disabled:opacity-30" title="Maschine bearbeiten" disabled>
+                            <i data-lucide="edit-3" class="w-5 h-5"></i>
+                        </button>
+                    </div>
                     
                     <div id="vehicleImageContainer" class="mt-4 hidden relative group rounded-xl overflow-hidden border-2 border-slate-800">
                         <img id="vehicleProfileImg" src="" alt="Fahrzeugbild" class="w-full h-44 object-cover filter grayscale contrast-125 group-hover:grayscale-0 transition duration-500">
@@ -68,8 +65,8 @@
                         </div>
                 </div>
 
-                <button onclick="openModal('eventModal')" id="addEventBtn" class="w-full bg-slate-100 hover:bg-white text-slate-950 p-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition shadow-xl uppercase rock-font tracking-wider disabled:opacity-30 disabled:hover:bg-slate-100" disabled>
-                    <i data-lucide="calendar-plus" class="w-5 h-5 text-orange-600"></i> Event in Schrauberbuch eintragen
+                <button onclick="openEventModal(false)" id="addEventBtn" class="w-full bg-slate-100 hover:bg-white text-slate-950 p-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition shadow-xl uppercase rock-font tracking-wider disabled:opacity-30" disabled>
+                    <i data-lucide="calendar-plus" class="w-5 h-5 text-orange-600"></i> Event eintragen
                 </button>
             </div>
 
@@ -87,17 +84,15 @@
                         </select>
                     </div>
                     <div class="text-[10px] text-slate-500 uppercase tracking-wider font-mono">
-                        Status: Bereit zum Heizen
+                        Status: Eisen hart geölt
                     </div>
                 </div>
 
                 <div id="pdfRenderArea" class="bg-slate-900 p-8 rounded-2xl border-2 border-slate-800 shadow-2xl relative overflow-hidden">
-                    
                     <div class="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-20 pointer-events-none"></div>
 
                     <div class="flex items-center gap-5 mb-8 border-b-2 border-slate-800 pb-5 relative z-10">
-                        <div id="timelineVehicleBadge" class="w-16 h-16 rounded-2xl bg-slate-950 border-2 border-orange-500 overflow-hidden flex items-center justify-center text-orange-500 font-black text-xl rock-font shadow-inner">
-                        </div>
+                        <div id="timelineVehicleBadge" class="w-16 h-16 rounded-2xl bg-slate-950 border-2 border-orange-500 overflow-hidden flex items-center justify-center text-orange-500 font-black text-xl rock-font shadow-inner"></div>
                         <div>
                             <h2 id="timelineVehicleName" class="text-2xl font-black text-white uppercase rock-font tracking-wide">Kein Ofen bereit</h2>
                             <p id="timelineVehicleSub" class="text-xs text-orange-500/80 font-mono mt-0.5"></p>
@@ -117,29 +112,36 @@
     <div id="vehicleModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
         <div class="bg-slate-900 rounded-2xl max-w-md w-full p-6 border-2 border-orange-600 shadow-2xl">
             <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
-                <h3 class="text-xl font-bold text-orange-500 uppercase rock-font">Maschine registrieren</h3>
+                <h3 id="vehicleModalTitle" class="text-xl font-bold text-orange-500 uppercase rock-font">Maschine registrieren</h3>
                 <button onclick="closeModal('vehicleModal')" class="text-slate-400 hover:text-white"><i data-lucide="x"></i></button>
             </div>
-            <form id="vehicleForm" class="space-y-4" onsubmit="saveVehicle(event)">
+            <form id="vehicleForm" class="space-y-4" onsubmit="handleVehicleSubmit(event)">
+                <input type="hidden" id="vEditId">
                 <div>
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Name / Bezeichnung</label>
                     <input type="text" id="vName" required placeholder="z.B. Harley Bobber, Kangoo Beast" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
                 </div>
+                
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <label for="vIsKauf" class="text-xs font-bold text-slate-400 uppercase tracking-wider cursor-pointer">Kauf / Eigentum (Kein Leasing)</label>
+                    <input type="checkbox" id="vIsKauf" onchange="toggleLeasingEndField()" class="w-4 h-4 accent-orange-500 cursor-pointer">
+                </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Leasing Start</label>
+                        <label id="vStartLabel" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Anschaffung / Start</label>
                         <input type="date" id="vStart" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
                     </div>
-                    <div>
+                    <div id="leasingEndContainer">
                         <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Leasing Ende</label>
-                        <input type="date" id="vEnde" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+                        <input type="date" id="vEnde" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Foto der Maschine</label>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Foto der Maschine (überschreibt altes Bild)</label>
                     <input type="file" id="vImage" accept="image/*" class="w-full text-xs text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-orange-600 file:text-white hover:file:bg-orange-500 file:transition cursor-pointer">
                 </div>
-                <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white p-3 rounded-xl font-bold uppercase tracking-wider transition rock-font mt-2">In die Garage stellen</button>
+                <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white p-3 rounded-xl font-bold uppercase tracking-wider transition rock-font mt-2">Daten festmeißeln</button>
             </form>
         </div>
     </div>
@@ -147,10 +149,11 @@
     <div id="eventModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
         <div class="bg-slate-900 rounded-2xl max-w-md w-full p-6 border-2 border-orange-600 shadow-2xl">
             <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
-                <h3 class="text-xl font-bold text-orange-500 uppercase rock-font">Eintrag ins Schrauberbuch</h3>
+                <h3 id="eventModalTitle" class="text-xl font-bold text-orange-500 uppercase rock-font">Eintrag ins Schrauberbuch</h3>
                 <button onclick="closeModal('eventModal')" class="text-slate-400 hover:text-white"><i data-lucide="x"></i></button>
             </div>
-            <form id="eventForm" class="space-y-4" onsubmit="saveEvent(event)">
+            <form id="eventForm" class="space-y-4" onsubmit="handleEventSubmit(event)">
+                <input type="hidden" id="eEditId">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Datum</label>
@@ -174,7 +177,7 @@
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Zusatzinfos / Werkstatt / Kosten</label>
                     <input type="text" id="eNote" placeholder="z.B. 240€ bei Custom-Bikes Hildesheim" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 focus:ring-2 focus:ring-orange-500 focus:outline-none">
                 </div>
-                <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white p-3 rounded-xl font-bold uppercase tracking-wider transition rock-font mt-2">Ereignis festmeißeln</button>
+                <button type="submit" class="w-full bg-orange-600 hover:bg-orange-500 text-white p-3 rounded-xl font-bold uppercase tracking-wider transition rock-font mt-2">Ereignis sichern</button>
             </form>
         </div>
     </div>
@@ -199,13 +202,14 @@
 
         window.onload = function() {
             loadFromStorage();
-            lucide.createIcons();
         };
 
         function loadFromStorage() {
             const localData = localStorage.getItem('kfz_biker_data');
             if (localData) {
                 data = JSON.parse(localData);
+                // Kompatibilitäts-Fix für alte Daten (falls vIsKauf fehlt)
+                data.vehicles.forEach(v => { if(v.isKauf === undefined) v.isKauf = false; });
                 populateVehicleSelect();
                 if (data.vehicles.length > 0) {
                     switchVehicle(data.vehicles[0].id);
@@ -222,42 +226,154 @@
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
 
-        function saveVehicle(e) {
+        function toggleLeasingEndField() {
+            const isKauf = document.getElementById('vIsKauf').checked;
+            const endContainer = document.getElementById('leasingEndContainer');
+            const endInput = document.getElementById('vEnde');
+            const startLabel = document.getElementById('vStartLabel');
+            
+            if(isKauf) {
+                endContainer.classList.add('hidden');
+                endInput.removeAttribute('required');
+                endInput.value = '';
+                startLabel.textContent = "Kaufdatum / Start";
+            } else {
+                endContainer.classList.remove('hidden');
+                endInput.setAttribute('required', 'required');
+                startLabel.textContent = "Leasing Start";
+            }
+        }
+
+        // BIKE MODAL ÖFFNEN (CREATE ODER EDIT)
+        function openVehicleModal(isEdit = false) {
+            const form = document.getElementById('vehicleForm');
+            form.reset();
+            
+            if(isEdit && activeVehicleId) {
+                const v = data.vehicles.find(veh => veh.id === activeVehicleId);
+                if(!v) return;
+                document.getElementById('vehicleModalTitle').textContent = "Maschine modifizieren";
+                document.getElementById('vEditId').value = v.id;
+                document.getElementById('vName').value = v.name;
+                document.getElementById('vIsKauf').checked = v.isKauf || false;
+                document.getElementById('vStart').value = v.leasingStart;
+                toggleLeasingEndField();
+                if(!v.isKauf) {
+                    document.getElementById('vEnde').value = v.leasingEnde || '';
+                }
+            } else {
+                document.getElementById('vehicleModalTitle').textContent = "Maschine registrieren";
+                document.getElementById('vEditId').value = '';
+                document.getElementById('vIsKauf').checked = false;
+                toggleLeasingEndField();
+            }
+            openModal('vehicleModal');
+        }
+
+        function handleVehicleSubmit(e) {
             e.preventDefault();
+            const id = document.getElementById('vEditId').value;
             const name = document.getElementById('vName').value;
+            const isKauf = document.getElementById('vIsKauf').checked;
             const start = document.getElementById('vStart').value;
-            const ende = document.getElementById('vEnde').value;
+            const ende = isKauf ? '' : document.getElementById('vEnde').value;
             const imgFile = document.getElementById('vImage').files[0];
 
-            const newVehicle = {
-                id: 'v_' + Date.now(),
-                name: name,
-                leasingStart: start,
-                leasingEnde: ende,
-                image: '',
-                events: []
+            const processSave = (imgBase64 = null) => {
+                if(id) {
+                    // Edit Modus
+                    const v = data.vehicles.find(veh => veh.id === id);
+                    if(v) {
+                        v.name = name;
+                        v.isKauf = isKauf;
+                        v.leasingStart = start;
+                        v.leasingEnde = ende;
+                        if(imgBase64) v.image = imgBase64;
+                    }
+                } else {
+                    // Neu erstellen
+                    const newVehicle = {
+                        id: 'v_' + Date.now(),
+                        name: name,
+                        isKauf: isKauf,
+                        leasingStart: start,
+                        leasingEnde: ende,
+                        image: imgBase64 || '',
+                        events: []
+                    };
+                    data.vehicles.push(newVehicle);
+                    activeVehicleId = newVehicle.id;
+                }
+                saveToStorage();
+                populateVehicleSelect();
+                if(!id) switchVehicle(activeVehicleId);
+                closeModal('vehicleModal');
             };
 
             if (imgFile) {
                 const reader = new FileReader();
-                reader.onloadend = function() {
-                    newVehicle.image = reader.result;
-                    data.vehicles.push(newVehicle);
-                    activeVehicleId = newVehicle.id;
-                    saveToStorage();
-                    populateVehicleSelect();
-                    closeModal('vehicleModal');
-                    document.getElementById('vehicleForm').reset();
-                }
+                reader.onloadend = () => processSave(reader.result);
                 reader.readAsDataURL(imgFile);
             } else {
-                data.vehicles.push(newVehicle);
-                activeVehicleId = newVehicle.id;
-                saveToStorage();
-                populateVehicleSelect();
-                closeModal('vehicleModal');
-                document.getElementById('vehicleForm').reset();
+                processSave();
             }
+        }
+
+        // EVENT MODAL ÖFFNEN (CREATE ODER EDIT)
+        function openEventModal(isEdit = false, eventId = null) {
+            const form = document.getElementById('eventForm');
+            form.reset();
+            
+            if(isEdit && eventId) {
+                const v = data.vehicles.find(veh => veh.id === activeVehicleId);
+                const ev = v.events.find(e => e.id === eventId);
+                if(!ev) return;
+                
+                document.getElementById('eventModalTitle').textContent = "Eintrag korrigieren";
+                document.getElementById('eEditId').value = ev.id;
+                document.getElementById('eDate').value = ev.datum;
+                document.getElementById('eType').value = ev.typ;
+                document.getElementById('eTitle').value = ev.titel;
+                document.getElementById('eNote').value = ev.notiz || '';
+            } else {
+                document.getElementById('eventModalTitle').textContent = "Eintrag ins Schrauberbuch";
+                document.getElementById('eEditId').value = '';
+            }
+            openModal('eventModal');
+        }
+
+        function handleEventSubmit(e) {
+            e.preventDefault();
+            const v = data.vehicles.find(veh => veh.id === activeVehicleId);
+            if (!v) return;
+
+            const id = document.getElementById('eEditId').value;
+            const datum = document.getElementById('eDate').value;
+            const typ = document.getElementById('eType').value;
+            const titel = document.getElementById('eTitle').value;
+            const notiz = document.getElementById('eNote').value;
+
+            if(id) {
+                // Event bearbeiten
+                const ev = v.events.find(event => event.id === id);
+                if(ev) {
+                    ev.datum = datum;
+                    ev.typ = typ;
+                    ev.titel = titel;
+                    ev.notiz = notiz;
+                }
+            } else {
+                // Event neu anlegen
+                v.events.push({
+                    id: 'e_' + Date.now(),
+                    datum: datum,
+                    typ: typ,
+                    titel: titel,
+                    notiz: notiz
+                });
+            }
+            saveToStorage();
+            closeModal('eventModal');
         }
 
         function populateVehicleSelect() {
@@ -266,11 +382,12 @@
             data.vehicles.forEach(v => {
                 const opt = document.createElement('option');
                 opt.value = v.id;
-                opt.textContent = v.name;
+                opt.textContent = v.name + (v.isKauf ? ' (Kauf)' : ' (Leasing)');
                 if(v.id === activeVehicleId) opt.selected = true;
                 select.appendChild(opt);
             });
             document.getElementById('addEventBtn').disabled = data.vehicles.length === 0;
+            document.getElementById('editVehicleBtn').disabled = data.vehicles.length === 0;
         }
 
         function switchVehicle(id) {
@@ -289,25 +406,6 @@
             renderEverything();
         }
 
-        function saveEvent(e) {
-            e.preventDefault();
-            const vehicle = data.vehicles.find(v => v.id === activeVehicleId);
-            if (!vehicle) return;
-
-            const newEvent = {
-                id: 'e_' + Date.now(),
-                datum: document.getElementById('eDate').value,
-                typ: document.getElementById('eType').value,
-                titel: document.getElementById('eTitle').value,
-                notiz: document.getElementById('eNote').value
-            };
-
-            vehicle.events.push(newEvent);
-            saveToStorage();
-            closeModal('eventModal');
-            document.getElementById('eventForm').reset();
-        }
-
         function formatDate(dateString) {
             if(!dateString) return '';
             const d = new Date(dateString);
@@ -315,55 +413,62 @@
         }
 
         function getDaysDiff(futureDateStr) {
+            if(!futureDateStr) return -1;
             const now = new Date(); now.setHours(0,0,0,0);
             const future = new Date(futureDateStr); future.setHours(0,0,0,0);
             return Math.ceil((future - now) / (1000 * 60 * 60 * 24));
         }
 
         function formatRemainingTime(days) {
-            if (days < 0) return "🔥 Erledigt / Vorbei";
+            if (days < 0) return "🔥 Geschichte";
             if (days === 0) return "⚡ HEUTE FÄLLIG!";
             if (days < 30) return `Noch ${days} Tage`;
-            const months = Math.floor(days / 30.43);
-            return `Noch ca. ${months} Monat(e)`;
+            return `Noch ca. ${Math.floor(days / 30.43)} Monat(e)`;
         }
 
-        // RENDER PIPELINE: Generiert die Slalom-Ansicht
+        // TIMELINE RENDERING
         function renderEverything() {
             const vehicle = data.vehicles.find(v => v.id === activeVehicleId);
             const slalomContainer = document.getElementById('slalomTimelineContainer');
             const countdownContainer = document.getElementById('countdownContainer');
             
             if (!vehicle) {
-                slalomContainer.innerHTML = '<p class="text-slate-500 italic text-sm">Keine Maschinen im Fuhrpark. Drücke oben auf "Bike/KFZ einreiten".</p>';
+                slalomContainer.innerHTML = '<p class="text-slate-500 italic text-sm">Keine Maschinen im Fuhrpark. Drücke oben auf "Ofen einreiten".</p>';
                 countdownContainer.innerHTML = '<p class="text-xs text-slate-500 italic">Werkstatt schläft...</p>';
+                document.getElementById('timelineVehicleName').textContent = "Kein Ofen bereit";
+                document.getElementById('timelineVehicleSub').textContent = "";
                 return;
             }
 
             document.getElementById('timelineVehicleName').textContent = vehicle.name;
-            document.getElementById('timelineVehicleSub').textContent = `LEASE ROAD: ${formatDate(vehicle.leasingStart)} BIS ${formatDate(vehicle.leasingEnde)}`;
+            document.getElementById('timelineVehicleSub').textContent = vehicle.isKauf 
+                ? `KAUF-ROAD: ERWORBEN AM ${formatDate(vehicle.leasingStart)}`
+                : `LEASE-ROAD: ${formatDate(vehicle.leasingStart)} BIS ${formatDate(vehicle.leasingEnde)}`;
             
             const badge = document.getElementById('timelineVehicleBadge');
             badge.innerHTML = vehicle.image ? `<img src="${vehicle.image}" class="w-full h-full object-cover filter grayscale">` : `<i data-lucide="shield" class="w-8 h-8"></i>`;
 
-            // Events sortieren
+            // Meilensteine zusammenbauen
             let allEvents = [
-                { datum: vehicle.leasingStart, typ: 'Start', titel: 'Leasing Start (Übernahme)', notiz: 'Asphalt brennt' },
-                { datum: vehicle.leasingEnde, typ: 'Ende', titel: 'Leasing Ende (Endstation)', notiz: 'Schlüsselabgabe' }
+                { id: 'start_milestone', datum: vehicle.leasingStart, typ: 'Start', titel: vehicle.isKauf ? 'Kauf & Übernahme' : 'Leasing Start', notiz: 'Asphalt brennt' }
             ];
+            if(!vehicle.isKauf && vehicle.leasingEnde) {
+                allEvents.push({ id: 'end_milestone', datum: vehicle.leasingEnde, typ: 'Ende', titel: 'Leasing Ende', notiz: 'Fahrzeugrückgabe' });
+            }
+
             vehicle.events.forEach(e => allEvents.push(e));
             allEvents.sort((a, b) => new Date(a.datum) - new Date(b.datum));
 
             const activeFilter = document.getElementById('typeFilter').value;
             if (activeFilter !== 'all') {
-                allEvents = allEvents.filter(e => e.typ === 'Start' || e.typ === 'Ende' || e.typ === activeFilter);
+                allEvents = allEvents.filter(e => e.id.startsWith('start') || e.id.startsWith('end') || e.typ === activeFilter);
             }
 
-            // KARTEN REINRENDERN (Slalom Anordnung über Grid-Spalten)
             slalomContainer.innerHTML = '';
             allEvents.forEach((event, index) => {
                 const card = document.createElement('div');
                 const borderColors = typeColors[event.typ] || 'border-slate-700';
+                const isMilestone = event.id === 'start_milestone' || event.id === 'end_milestone';
                 
                 card.className = `p-5 rounded-2xl border-2 bg-slate-950 relative shadow-xl flex flex-col justify-between ${borderColors}`;
                 card.innerHTML = `
@@ -379,67 +484,73 @@
                     </div>
                     <div class="mt-4 flex justify-between items-center text-[10px] uppercase font-bold tracking-widest text-slate-500 border-t border-slate-800 pt-2">
                         <span>STATION #${index + 1}</span>
-                        <span class="text-orange-600/80">${event.typ}</span>
+                        ${isMilestone ? `<span class="text-slate-600">FEST</span>` : `
+                            <button onclick="openEventModal(true, '${event.id}')" class="text-orange-500 hover:text-orange-400 flex items-center gap-1 font-mono transition">
+                                <i data-lucide="edit-2" class="w-2.5 h-2.5"></i> Ändern
+                            </button>
+                        `}
                     </div>
                 `;
                 slalomContainer.appendChild(card);
             });
 
-            // Countdowns befüllen
+            // Countdowns berechnen
             countdownContainer.innerHTML = '';
-            let countItems = [{ titel: 'Endstation (Leasing Ende)', tage: getDaysDiff(vehicle.leasingEnde) }];
+            let countItems = [];
+            if(!vehicle.isKauf && vehicle.leasingEnde) {
+                const diff = getDaysDiff(vehicle.leasingEnde);
+                if(diff >= 0) countItems.push({ titel: 'Leasing Ablauf', tage: diff });
+            }
             vehicle.events.forEach(e => {
                 const diff = getDaysDiff(e.datum);
                 if(diff >= 0) countItems.push({ titel: e.titel, tage: diff });
             });
             countItems.sort((a,b) => a.tage - b.tage);
 
-            countItems.forEach(item => {
-                const cDiv = document.createElement('div');
-                cDiv.className = "p-3 rounded-xl border border-slate-800 bg-slate-950 text-xs flex justify-between items-center";
-                cDiv.innerHTML = `
-                    <div>
-                        <span class="font-bold text-slate-200 block uppercase tracking-wide text-[11px]">${item.titel}</span>
-                        <span class="text-orange-500 font-mono text-[11px] font-bold">${formatRemainingTime(item.tage)}</span>
-                    </div>
-                    <span class="w-2 h-2 rounded-full ${item.tage < 30 ? 'bg-red-500 animate-ping' : 'bg-orange-500'}"></span>
-                `;
-                countdownContainer.appendChild(cDiv);
-            });
+            if(countItems.length === 0) {
+                countdownContainer.innerHTML = '<p class="text-xs text-slate-500 italic">Keine anstehenden Deadlines.</p>';
+            } else {
+                countItems.forEach(item => {
+                    const cDiv = document.createElement('div');
+                    cDiv.className = "p-3 rounded-xl border border-slate-800 bg-slate-950 text-xs flex justify-between items-center";
+                    cDiv.innerHTML = `
+                        <div>
+                            <span class="font-bold text-slate-200 block uppercase tracking-wide text-[11px]">${item.titel}</span>
+                            <span class="text-orange-500 font-mono text-[11px] font-bold">${formatRemainingTime(item.tage)}</span>
+                        </div>
+                        <span class="w-2 h-2 rounded-full ${item.tage < 30 ? 'bg-red-500 animate-ping' : 'bg-orange-500'}"></span>
+                    `;
+                    countdownContainer.appendChild(cDiv);
+                });
+            }
 
             lucide.createIcons();
         }
 
-        // SLALOM / MEHRSEITEN PDF EXPORT (A4 Querformat)
+        // PDF EXPORT
         function exportSlalomPDF() {
             const { jsPDF } = window.jspdf;
             const element = document.getElementById('pdfRenderArea');
 
-            // Optimierung für den Export: Kontraste schärfen
             html2canvas(element, {
                 scale: 2,
                 useCORS: true,
-                backgroundColor: '#020617', // Tiefdunkler Hintergrund mitsenden
+                backgroundColor: '#020617',
                 logging: false
             }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 const pdf = new jsPDF('l', 'mm', 'a4');
-                
                 const pdfWidth = 297;
                 const pdfHeight = 210;
-                
-                // Berechnen wie viel Höhe das generierte Bild hat
                 const imgWidth = pdfWidth;
                 const imgHeight = (canvas.height * imgWidth) / canvas.width;
                 
                 let heightLeft = imgHeight;
                 let position = 0;
 
-                // Erste Seite hinzufügen
                 pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
                 heightLeft -= pdfHeight;
 
-                // Falls der Slalom-Zeitstrahl länger als eine A4 Seite nach unten wandert -> neue Seiten dranhängen
                 while (heightLeft > 0) {
                     position = heightLeft - imgHeight;
                     pdf.addPage();
@@ -449,7 +560,7 @@
 
                 const vehicle = data.vehicles.find(v => v.id === activeVehicleId);
                 const nameSnippet = vehicle ? vehicle.name.replace(/\s+/g, '_') : 'Garage';
-                pdf.save(`GARAGE_LEASING_${nameSnippet.toUpperCase()}.pdf`);
+                pdf.save(`GARAGE_PROZESS_${nameSnippet.toUpperCase()}.pdf`);
             });
         }
     </script>
