@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biker Garage - Timeline Manager v2</title>
+    <title>Biker Garage - Timeline Manager v2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -26,7 +26,7 @@
         <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900 p-5 rounded-2xl border-2 border-orange-600/30 shadow-2xl shadow-orange-950/20">
             <div>
                 <h1 class="text-3xl font-black text-orange-500 flex items-center gap-3 rock-font uppercase italic tracking-wider">
-                    <i data-lucide="wrench" class="text-orange-500"></i> BIKER GARAGE <span class="text-slate-400 font-light text-xl">// Schrauberbuch v2</span>
+                    <i data-lucide="wrench" class="text-orange-500"></i> BIKER GARAGE <span class="text-slate-400 font-light text-xl">// Schrauberbuch</span>
                 </h1>
                 <p class="text-xs text-slate-400 uppercase tracking-widest mt-1">Rock 'n' Roll Service, Kauf- & Leasing Planer</p>
             </div>
@@ -59,6 +59,21 @@
                     </div>
                 </div>
 
+                <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-xl space-y-3">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest rock-font flex items-center gap-2">
+                        <i data-lucide="save" class="w-3.5 h-3.5 text-orange-500"></i> Datensicherung
+                    </h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="exportBackup()" class="bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition">
+                            <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-orange-500"></i> Export
+                        </button>
+                        <label class="bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer text-center">
+                            <i data-lucide="download-cloud" class="w-3.5 h-3.5 text-emerald-500"></i> Import
+                            <input type="file" id="backupInput" accept=".json" onchange="importBackup(event)" class="hidden">
+                        </label>
+                    </div>
+                </div>
+
                 <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-xl space-y-4">
                     <h3 class="text-xs font-bold text-orange-500 uppercase tracking-widest rock-font">Deadlines & Termine</h3>
                     <div id="countdownContainer" class="space-y-3">
@@ -84,7 +99,7 @@
                         </select>
                     </div>
                     <div class="text-[10px] text-slate-500 uppercase tracking-wider font-mono">
-                        Status: Eisen hart geölt
+                        Status: Kolben geschmiert
                     </div>
                 </div>
 
@@ -208,7 +223,6 @@
             const localData = localStorage.getItem('kfz_biker_data');
             if (localData) {
                 data = JSON.parse(localData);
-                // Kompatibilitäts-Fix für alte Daten (falls vIsKauf fehlt)
                 data.vehicles.forEach(v => { if(v.isKauf === undefined) v.isKauf = false; });
                 populateVehicleSelect();
                 if (data.vehicles.length > 0) {
@@ -222,6 +236,60 @@
             localStorage.setItem('kfz_biker_data', JSON.stringify(data));
             renderEverything();
         }
+
+        // ==========================================
+        // NEW: BACKUP EXPORT & IMPORT LOGIK
+        // ==========================================
+        function exportBackup() {
+            if (data.vehicles.length === 0) {
+                alert("Keine Daten zum Exportieren vorhanden!");
+                return;
+            }
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `biker_garage_backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    // Strukturprüfung, um fehlerhafte Dateien abzufangen
+                    if (importedData && Array.isArray(importedData.vehicles)) {
+                        if (confirm("Möchtest du das Backup einspielen? Bestehende Daten auf diesem Gerät werden überschrieben!")) {
+                            data = importedData;
+                            saveToStorage();
+                            populateVehicleSelect();
+                            if (data.vehicles.length > 0) {
+                                switchVehicle(data.vehicles[0].id);
+                            }
+                            alert("Backup erfolgreich eingespielt! Die Werkstatt läuft wieder.");
+                        }
+                    } else {
+                        alert("Fehler: Ungültiges Dateiformat. Das ist kein echtes Biker-Garage Backup.");
+                    }
+                } catch (err) {
+                    alert("Fehler beim Lesen der Datei. Beschädigtes JSON.");
+                }
+            };
+            reader.readAsText(file);
+            // Input zurücksetzen, damit dieselbe Datei mehrmals gewählt werden kann
+            event.target.value = '';
+        }
+        // ==========================================
 
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
@@ -244,7 +312,6 @@
             }
         }
 
-        // BIKE MODAL ÖFFNEN (CREATE ODER EDIT)
         function openVehicleModal(isEdit = false) {
             const form = document.getElementById('vehicleForm');
             form.reset();
@@ -281,7 +348,6 @@
 
             const processSave = (imgBase64 = null) => {
                 if(id) {
-                    // Edit Modus
                     const v = data.vehicles.find(veh => veh.id === id);
                     if(v) {
                         v.name = name;
@@ -291,7 +357,6 @@
                         if(imgBase64) v.image = imgBase64;
                     }
                 } else {
-                    // Neu erstellen
                     const newVehicle = {
                         id: 'v_' + Date.now(),
                         name: name,
@@ -319,7 +384,6 @@
             }
         }
 
-        // EVENT MODAL ÖFFNEN (CREATE ODER EDIT)
         function openEventModal(isEdit = false, eventId = null) {
             const form = document.getElementById('eventForm');
             form.reset();
@@ -354,7 +418,6 @@
             const notiz = document.getElementById('eNote').value;
 
             if(id) {
-                // Event bearbeiten
                 const ev = v.events.find(event => event.id === id);
                 if(ev) {
                     ev.datum = datum;
@@ -363,7 +426,6 @@
                     ev.notiz = notiz;
                 }
             } else {
-                // Event neu anlegen
                 v.events.push({
                     id: 'e_' + Date.now(),
                     datum: datum,
@@ -426,7 +488,6 @@
             return `Noch ca. ${Math.floor(days / 30.43)} Monat(e)`;
         }
 
-        // TIMELINE RENDERING
         function renderEverything() {
             const vehicle = data.vehicles.find(v => v.id === activeVehicleId);
             const slalomContainer = document.getElementById('slalomTimelineContainer');
@@ -448,7 +509,6 @@
             const badge = document.getElementById('timelineVehicleBadge');
             badge.innerHTML = vehicle.image ? `<img src="${vehicle.image}" class="w-full h-full object-cover filter grayscale">` : `<i data-lucide="shield" class="w-8 h-8"></i>`;
 
-            // Meilensteine zusammenbauen
             let allEvents = [
                 { id: 'start_milestone', datum: vehicle.leasingStart, typ: 'Start', titel: vehicle.isKauf ? 'Kauf & Übernahme' : 'Leasing Start', notiz: 'Asphalt brennt' }
             ];
@@ -494,7 +554,6 @@
                 slalomContainer.appendChild(card);
             });
 
-            // Countdowns berechnen
             countdownContainer.innerHTML = '';
             let countItems = [];
             if(!vehicle.isKauf && vehicle.leasingEnde) {
@@ -527,7 +586,6 @@
             lucide.createIcons();
         }
 
-        // PDF EXPORT
         function exportSlalomPDF() {
             const { jsPDF } = window.jspdf;
             const element = document.getElementById('pdfRenderArea');
