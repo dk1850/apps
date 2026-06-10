@@ -3,124 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biker Garage - Command Center</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>Familien-Tarifmanager</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap');
-        .rock-font { font-family: 'Oswald', sans-serif; tracking: 0.05em; }
-        
-        /* Glühender Neon-Effekt für aktive Kacheln */
-        .neon-glow:hover {
-            box-shadow: 0 0 25px rgba(234, 88, 12, 0.25);
-            border-color: rgba(234, 88, 12, 0.6);
-        }
+        /* Sanfte Übergänge für Interaktionen */
+        .transition-all { transition: all 0.2s ease-in-out; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen selection:bg-orange-600 selection:text-white flex flex-col justify-between">
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-12">
 
-    <div class="w-full max-w-6xl mx-auto p-4 md:p-8 space-y-8 flex-grow">
+    <header class="bg-indigo-600 text-white shadow-md mb-8">
+        <div class="max-w-6xl mx-auto px-4 py-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">Familien-Tarifmanager 📱</h1>
+                <p class="text-indigo-200 text-sm">Verträge von David & Familie im Überblick</p>
+            </div>
+            <button onclick="toggleModal(true)" class="bg-white text-indigo-600 hover:bg-indigo-50 font-semibold px-4 py-2 rounded-lg shadow text-sm transition-all cursor-pointer">
+                + Neuen Vertrag
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4">
         
-        <header class="text-center md:text-left border-b-2 border-slate-900 pb-6 relative overflow-hidden">
-            <div class="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-20 pointer-events-none"></div>
-            
-            <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                <p class="text-xs text-slate-400 font-medium uppercase">Aktive Verträge</p>
+                <p id="stat-count" class="text-2xl font-bold text-indigo-600">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                <p class="text-xs text-slate-400 font-medium uppercase">Gesamtkosten / Monat</p>
+                <p id="stat-costs" class="text-2xl font-bold text-emerald-600">0,00 €</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                <p class="text-xs text-slate-400 font-medium uppercase">Nächste Kündigung</p>
+                <p id="stat-next" class="text-2xl font-bold text-amber-500">-</p>
+            </div>
+        </div>
+
+        <div id="contract-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+
+        <div id="empty-state" class="hidden text-center py-12">
+            <p class="text-slate-400 text-lg">Noch keine Verträge eingetragen. Klicke oben auf "+ Neuen Vertrag"!</p>
+        </div>
+    </main>
+
+    <div id="modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+            <div class="bg-indigo-600 p-4 text-white flex justify-between items-center">
+                <h3 id="modal-title" class="font-bold text-lg">Neuen Vertrag hinzufügen</h3>
+                <button onclick="toggleModal(false)" class="text-white/80 hover:text-white text-xl cursor-pointer">&times;</button>
+            </div>
+            <form id="contract-form" onsubmit="saveContract(event)" class="p-6 space-y-4">
+                <input type="hidden" id="contract-id">
+                
                 <div>
-                    <h1 class="text-4xl font-black text-orange-500 rock-font uppercase italic tracking-wider flex items-center justify-center md:justify-start gap-3">
-                        <i data-lucide="terminal" class="text-orange-500"></i> HQ // BIKER GARAGE
-                    </h1>
-                    <p class="text-xs text-slate-400 uppercase tracking-widest mt-1">Zentrale App-Schaltzentrale & Fuhrpark-Management</p>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Inhaber *</label>
+                    <input type="text" id="form-user" required placeholder="z. B. David, Mama, Papa" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500">
                 </div>
-                <div class="text-right font-mono text-[11px] text-slate-500 bg-slate-900 px-4 py-2 border border-slate-800 rounded-xl">
-                    SYSTEM STATUS: <span class="text-emerald-500 font-bold">ONLINE</span>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Handynummer</label>
+                    <input type="text" id="form-number" placeholder="z. B. 0176 / 1234567" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500">
                 </div>
-            </div>
-        </header>
-
-        <section class="space-y-4">
-            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest rock-font mb-4">Verfügbare Module</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-                <a href="https://dk1850.github.io/apps/leasing.html" class="group bg-slate-900 border-2 border-slate-800/80 rounded-2xl p-6 transition duration-300 flex flex-col justify-between h-56 neon-glow relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-12 h-12 bg-orange-600/10 rounded-bl-3xl border-b border-l border-orange-600/20 flex items-center justify-center">
-                        <i data-lucide="arrow-up-right" class="w-4 h-4 text-orange-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition"></i>
-                    </div>
-                    
+                <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <div class="w-12 h-12 rounded-xl bg-orange-600/10 border border-orange-500/30 flex items-center justify-center text-orange-500 mb-4 shadow-md">
-                            <i data-lucide="calendar-range" class="w-6 h-6"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-white uppercase rock-font tracking-wide group-hover:text-orange-400 transition">Schrauberbuch & Timeline</h3>
-                        <p class="text-xs text-slate-400 mt-2 line-clamp-2">
-                            Verwalte Leasing-Fahrzeuge, Eigenbauten, Inspektionen, TÜV-Intervalle und exportiere alles als mehrseitiges Slalom-PDF.
-                        </p>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Anbieter</label>
+                        <input type="text" id="form-provider" placeholder="z. B. Telekom, O2" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500">
                     </div>
-
-                    <div class="border-t border-slate-800 pt-3 mt-4 flex justify-between items-center text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                        <span>Status: Aktiv</span>
-                        <span class="text-orange-500 bg-orange-950/40 px-2 py-0.5 border border-orange-600/30 rounded-md font-mono">v2.1</span>
-                    </div>
-                </a>
-
-                <a href="https://dk1850.github.io/apps/versicherungen.html" class="group bg-slate-900 border-2 border-slate-800/80 rounded-2xl p-6 transition duration-300 flex flex-col justify-between h-56 neon-glow relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-12 h-12 bg-orange-600/10 rounded-bl-3xl border-b border-l border-orange-600/20 flex items-center justify-center">
-                        <i data-lucide="arrow-up-right" class="w-4 h-4 text-orange-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition"></i>
-                    </div>
-                    
                     <div>
-                        <div class="w-12 h-12 rounded-xl bg-orange-600/10 border border-orange-500/30 flex items-center justify-center text-orange-500 mb-4 shadow-md">
-                            <i data-lucide="shield" class="w-6 h-6"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-white uppercase rock-font tracking-wide group-hover:text-orange-400 transition">Versicherungs-Manager</h3>
-                        <p class="text-xs text-slate-400 mt-2 line-clamp-2">
-                            Policen-Verwaltung, Halter- & Versicherungsnehmer-Zuordnung, Kostenkontrolle und Fristen-Überwachung für deine Maschinen.
-                        </p>
-                    </div>
-
-                    <div class="border-t border-slate-800 pt-3 mt-4 flex justify-between items-center text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                        <span>Status: Bereit</span>
-                        <span class="text-orange-500 bg-orange-950/40 px-2 py-0.5 border border-orange-600/30 rounded-md font-mono">v1.0</span>
-                    </div>
-                </a>
-
-                <div class="bg-slate-900/20 border-2 border-dashed border-slate-900/60 rounded-2xl p-6 flex flex-col justify-between h-56 relative opacity-40">
-                    <div class="flex flex-col items-center justify-center h-full text-center space-y-3">
-                        <div class="p-3 bg-slate-950/40 rounded-full border border-slate-800/40">
-                            <i data-lucide="plus" class="w-6 h-6 text-slate-600"></i>
-                        </div>
-                        <div>
-                            <span class="block text-xs font-bold text-slate-500 uppercase tracking-widest rock-font">Nächstes Projekt</span>
-                            <span class="text-[11px] text-slate-600 font-mono mt-1 block">Slot frei für Erweiterung</span>
-                        </div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Betrag / Monat (€) *</label>
+                        <input type="number" id="form-price" step="0.01" required placeholder="19.99" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500">
                     </div>
                 </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Laufzeit / Kündigungsfrist</label>
+                    <input type="date" id="form-date" class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Hinweise / Notizen</label>
+                    <textarea id="form-notes" rows="3" placeholder="z. B. Inklusive Disney+, kündigen bis Oktober..." class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-500"></textarea>
+                </div>
 
-            </div>
-        </section>
-        
-        <footer class="bg-slate-900/40 border border-slate-900 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-            <div class="flex items-center gap-2">
-                <i data-lucide="cpu" class="w-4 h-4 text-orange-600"></i>
-                <span>Zentrales Dashboard läuft offline via LocalStorage.</span>
-            </div>
-            <div class="font-mono text-[10px]">
-                CODE & DESIGN BY DK1850
-            </div>
-        </footer>
-
-    </div>
-
-    <div class="w-full text-center select-none opacity-5 pointer-events-none pb-4 overflow-hidden">
-        <span class="text-8xl md:text-9xl font-black uppercase tracking-tighter text-white font-mono block whitespace-nowrap">
-            RIDE HARD OR STAY HOME — REPAIR OR DIE — RIDE HARD OR STAY HOME —
-        </span>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="toggleModal(false)" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-sm cursor-pointer">Abbrechen</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm shadow transition-all cursor-pointer">Speichern</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
-        window.onload = function() {
-            lucide.createIcons();
-        };
+        // Start-Daten (werden geladen, falls LocalStorage leer ist)
+        const defaultContracts = [
+            { id: 1, user: 'David', number: '0151 / 555 444 33', provider: 'Telekom', price: 29.99, date: '2027-04-01', notes: 'Hauptvertrag. Monatlich kündbar ab April 2027.' },
+            { id: 2, user: 'Mama', number: '0176 / 999 888 77', provider: 'O2', price: 14.99, date: '2026-12-15', notes: 'Partnerkarte. Wichtig: Datenvolumen reicht oft nicht ganz.' }
+        ];
+
+        let contracts = JSON.parse(localStorage.getItem('family_contracts')) || defaultContracts;
+
+        function renderApp() {
+            const grid = document.getElementById('contract-grid');
+            const emptyState = document.getElementById('empty-state');
+            grid.innerHTML = '';
+
+            if (contracts.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            let totalCosts = 0;
+            let dates = [];
+
+            contracts.forEach(c => {
+                totalCosts += parseFloat(c.price);
+                if(c.date) dates.push(new Date(c.date));
+
+                // Formatierung des Datums für die Anzeige
+                const formattedDate = c.date ? new Date(c.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Nicht angegeben';
+
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col justify-between hover:shadow-md transition-all";
+                card.innerHTML = `
+                    <div class="p-5">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <span class="bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-md">${c.user}</span>
+                                <h4 class="text-lg font-bold mt-1.5 text-slate-900">${c.provider || 'Mobilfunk'}</h4>
+                            </div>
+                            <span class="text-xl font-black text-slate-900">${parseFloat(c.price).toFixed(2).replace('.', ',')} €<span class="text-xs font-normal text-slate-400">/Monat</span></span>
+                        </div>
+                        
+                        <div class="space-y-2 my-4 text-sm text-slate-600">
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Nummer:</span>
+                                <span class="font-mono font-medium">${c.number || '-'}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-400">Laufzeit bis:</span>
+                                <span class="font-medium ${isSoon(c.date) ? 'text-amber-600 font-semibold' : ''}">${formattedDate}</span>
+                            </div>
+                        </div>
+
+                        ${c.notes ? `
+                        <div class="mt-4 pt-3 border-t border-dashed border-slate-100">
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Hinweise:</p>
+                            <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100 italic leading-relaxed">"${c.notes}"</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="bg-slate-50 px-5 py-3 border-t border-slate-100 flex justify-end space-x-3 text-xs">
+                        <button onclick="editContract(${c.id})" class="text-indigo-600 hover:text-indigo-900 font-semibold cursor-pointer">Bearbeiten</button>
+                        <button onclick="deleteContract(${c.id})" class="text-rose-600 hover:text-rose-900 font-semibold cursor-pointer">Löschen</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            // Stats aktualisieren
+            document.getElementById('stat-count').innerText = contracts.length;
+            document.getElementById('stat-costs').innerText = totalCosts.toFixed(2).replace('.', ',') + ' €';
+            
+            if(dates.length > 0) {
+                const nextDate = new Date(Math.min(...dates));
+                document.getElementById('stat-next').innerText = nextDate.toLocaleDateString('de-DE', { month: '2-digit', year: '2-digit' });
+            } else {
+                document.getElementById('stat-next').innerText = '-';
+            }
+
+            // In LocalStorage sichern
+            localStorage.setItem('family_contracts', JSON.stringify(contracts));
+        }
+
+        function toggleModal(show) {
+            const modal = document.getElementById('modal');
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+                document.getElementById('contract-form').reset();
+                document.getElementById('contract-id').value = '';
+                document.getElementById('modal-title').innerText = 'Neuen Vertrag hinzufügen';
+            }
+        }
+
+        function saveContract(e) {
+            e.preventDefault();
+            const id = document.getElementById('contract-id').value;
+            const user = document.getElementById('form-user').value;
+            const number = document.getElementById('form-number').value;
+            const provider = document.getElementById('form-provider').value;
+            const price = document.getElementById('form-price').value;
+            const date = document.getElementById('form-date').value;
+            const notes = document.getElementById('form-notes').value;
+
+            if (id) {
+                // Bearbeiten
+                contracts = contracts.map(c => c.id == id ? { id: Number(id), user, number, provider, price, date, notes } : c);
+            } else {
+                // Neu erstellen
+                const newId = contracts.length > 0 ? Math.max(...contracts.map(c => c.id)) + 1 : 1;
+                contracts.push({ id: newId, user, number, provider, price, date, notes });
+            }
+
+            renderApp();
+            toggleModal(false);
+        }
+
+        function editContract(id) {
+            const c = contracts.find(item => item.id === id);
+            if (!c) return;
+
+            document.getElementById('contract-id').value = c.id;
+            document.getElementById('form-user').value = c.user;
+            document.getElementById('form-number').value = c.number;
+            document.getElementById('form-provider').value = c.provider;
+            document.getElementById('form-price').value = c.price;
+            document.getElementById('form-date').value = c.date;
+            document.getElementById('form-notes').value = c.notes;
+
+            document.getElementById('modal-title').innerText = 'Vertrag bearbeiten';
+            toggleModal(true);
+        }
+
+        function deleteContract(id) {
+            if (confirm('Möchtest du diesen Vertrag wirklich löschen?')) {
+                contracts = contracts.filter(c => c.id !== id);
+                renderApp();
+            }
+        }
+
+        // Hilfsfunktion: Prüft ob ein Vertrag in den nächsten 90 Tagen ausläuft
+        function isSoon(dateString) {
+            if(!dateString) return false;
+            const diffTime = new Date(dateString) - new Date();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays > 0 && diffDays <= 90;
+        }
+
+        // Initiales Rendern beim Laden der Seite
+        renderApp();
     </script>
 </body>
 </html>
